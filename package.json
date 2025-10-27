@@ -1,0 +1,47 @@
+{
+    "name": "turbo-meta-utilities",
+    "version": "1.0.0",
+    "description": "Utilities for working with Turborepo monorepos - read packages, apps, and package.json metadata",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "author": "omaribrahimdev",
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+        "turborepo",
+        "monorepo",
+        "turbo",
+        "package-json",
+        "utilities"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "minimatch": "^10.0.1",
+        "zod": "^3.23.8"
+    },
+    "devDependencies": {
+        "@types/node": "^22.9.0",
+        "@vitest/coverage-v8": "^2.1.4",
+        "typescript": "^5.6.3",
+        "vitest": "^2.1.4"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

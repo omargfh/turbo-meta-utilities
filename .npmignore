@@ -1,0 +1,10 @@
+src/
+tests/
+docs/
+*.test.ts
+tsconfig.json
+vitest.config.ts
+.gitignore
+coverage/
+.vscode/
+.idea/
