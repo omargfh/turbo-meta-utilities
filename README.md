@@ -4,19 +4,47 @@ A TypeScript utility library for working with Turborepo monorepos. Provides tool
 
 ## Features
 
-- 🚀 Full TypeScript support with type definitions
-- 📦 Read and parse package.json files with validation
-- 🎯 Access packages and apps in your monorepo
-- 🔍 Resolve package exports and imports
-- 🧪 100% test coverage
-- 🏗️ Built with SOLID principles
-- 🔄 Dependency injection support for testing
+-  Full TypeScript support with type definitions
+-  Read and parse package.json files with validation
+-  Access packages and apps in your monorepo
+-  Resolve package exports and imports
+-  100% test coverage
+-   Dependency injection support for testing
 
 ## Installation
 
 ```bash
 npm install turbo-meta-utilities
 ```
+
+## Rationale
+Turborepo promotes strong isolation between apps and packages. Each workspace is expected to operate within its own directory boundary, with dependencies declared explicitly through package.json. While this pattern is great for build integrity and cache efficiency, it can become restrictive in practical, developer-facing workflows that rely on cross-package awareness.
+
+Real-world projects often require shared type definitions, file watching, and auto-import behavior across multiple apps. These use cases are side-effect-free (they don’t mutate or build other packages) but they do require the toolchain to know where other packages live within the monorepo. Using relative paths breaks isolation and is volatile due to package names being tied only to their package.json.
+
+For example:
+- Typing: Nuxt or Vite often needs to reference .d.ts files from a shared UI or types package to enable autocomplete and linting.
+- File watching: During local development, hot module reload (HMR) may depend on detecting file changes in sibling packages.
+- Auto-imports: When using features like Nuxt’s autoImports or Volar’s component auto-discovery, the tooling must scan across package directories.
+
+However, because Turborepo discourages relative imports that jump outside a package’s boundary (e.g., ../../packages/ui), developers often face friction between correctness and convenience.
+
+### Why Relative Paths Are Volatile
+NPM and Yarn workspaces identify dependencies by package name, not by directory path. This means the following two configurations are equivalent in terms of resolution:
+
+```
+apps/web
+packages/ui
+```
+
+```
+apps/my-frontend
+packages/awesome-components
+```
+
+As long as "name": "@repo/ui" and "dependencies": { "@repo/ui": "*" } are consistent, the actual file layout is irrelevant. Relying on relative paths therefore introduces fragility: any directory restructuring or renaming breaks imports and tooling references.
+
+This makes direct relative linking (../../packages/ui) a poor long-term choice for things like IDE imports, runtime resolution, or local development.
 
 ## Quick Start
 
