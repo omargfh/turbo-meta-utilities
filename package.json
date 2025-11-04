@@ -1,6 +1,6 @@
 {
     "name": "turbo-meta-utilities",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Utilities for working with Turborepo monorepos - read packages, apps, and package.json metadata",
     "type": "module",
     "main": "./dist/index.js",

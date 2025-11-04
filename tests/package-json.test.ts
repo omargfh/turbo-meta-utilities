@@ -38,6 +38,47 @@ describe('ExportTarget', () => {
 		it('should throw error for empty object', () => {
 			expect(() => new ExportTarget({})).toThrow('Invalid export target');
 		});
+
+		it('should resolve nested conditional exports', () => {
+			const target = new ExportTarget({
+				import: {
+					node: './dist/index.node.mjs',
+					default: './dist/index.mjs',
+				},
+				require: {
+					node: './dist/index.node.cjs',
+					default: './dist/index.cjs',
+				},
+			});
+
+			expect(target.import).toBe('./dist/index.node.mjs');
+			expect(target.require).toBe('./dist/index.node.cjs');
+			expect(target.resolve(['browser', 'import'])).toBe('./dist/index.mjs');
+			expect(target.resolve(['browser', 'require'])).toBe('./dist/index.cjs');
+		});
+
+		it('should honor array fallbacks and skip null entries', () => {
+			const target = new ExportTarget([
+				null,
+				{
+					default: './dist/index.js',
+					browser: './dist/index.browser.js',
+				},
+			]);
+
+			expect(target.default).toBe('./dist/index.js');
+			expect(target.resolve(['browser'])).toBe('./dist/index.browser.js');
+		});
+
+		it('should treat null targets as blocked', () => {
+			const target = new ExportTarget({
+				default: null,
+				import: './dist/index.mjs',
+			});
+
+			expect(target.default).toBe('./dist/index.mjs');
+			expect(target.resolve(['default'])).toBeUndefined();
+		});
 	});
 });
 
@@ -56,10 +97,16 @@ describe('GlobResolver', () => {
 	it('should resolve glob pattern', () => {
 		const resolver = new GlobResolver({
 			'./*': './dist/*.js',
+			'./**/*': './dist/**/*.js',
 		});
 
 		const target = resolver.resolveImport('./utils');
 		expect(target).toBeDefined();
+		expect(target?.default).toBe('./dist/utils.js');
+
+		const deepTarget = resolver.resolveImport('./components/button');
+		expect(deepTarget).toBeDefined();
+		expect(deepTarget?.default).toBe('./dist/components/button.js');
 	});
 
 	it('should return undefined for no match', () => {
@@ -79,7 +126,24 @@ describe('GlobResolver', () => {
 
 		const target = resolver.resolveImport('./utils');
 		expect(target).toBeDefined();
-		expect(target?.default).toBe('./dist/*.js');
+		expect(target?.default).toBe('./dist/utils.js');
+	});
+
+	it('should substitute wildcards inside nested conditions', () => {
+		const resolver = new GlobResolver({
+			'./components/*': {
+				import: {
+					node: './dist/node/components/*.mjs',
+					default: './dist/components/*.mjs',
+				},
+				default: './dist/components/*.js',
+			},
+		});
+
+		const target = resolver.resolveImport('./components/button');
+		expect(target).toBeDefined();
+		expect(target?.import).toBe('./dist/node/components/button.mjs');
+		expect(target?.resolve(['browser'])).toBe('./dist/components/button.js');
 	});
 });
 
@@ -198,6 +262,32 @@ describe('PackageJson', () => {
 			const target = pkg.resolveImport('.');
 			expect(target).toBeDefined();
 			expect(target?.default).toBe('./dist/index.js');
+		});
+
+		it('should support conditional exports resolution', () => {
+			vi.mocked(mockFs.existsSync).mockReturnValue(true);
+			vi.mocked(mockFs.readFileSync).mockReturnValue(
+				JSON.stringify({
+					name: 'test-package',
+					exports: {
+						'.': {
+							import: {
+								node: './dist/index.node.mjs',
+								default: './dist/index.mjs',
+							},
+							require: './dist/index.cjs',
+						},
+					},
+				})
+			);
+
+			const pkg = new PackageJson('/fake/package.json', mockFs);
+			const target = pkg.resolveImport('.');
+			expect(target).toBeDefined();
+			expect(target?.import).toBe('./dist/index.node.mjs');
+			expect(target?.resolve(['browser', 'import'])).toBe('./dist/index.mjs');
+			const requireTarget = target?.resolve(['require']);
+			expect(requireTarget).toBe('./dist/index.cjs');
 		});
 
 		it('should return undefined if no exports field', () => {
